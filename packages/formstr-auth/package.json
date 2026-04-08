@@ -11,9 +11,13 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/formstr-auth.js"
+      "import": "./dist/formstr-auth.js",
+      "default": "./dist/formstr-auth.js"
     }
   },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "dist"
   ],
@@ -24,13 +28,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "nostr-signer-capacitor-plugin": "^0.0.5",
     "qrcode.react": "^4.2.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
-    "nostr-tools": ">=2.0.0"
+    "nostr-tools": ">=2.0.0",
+    "nostr-signer-capacitor-plugin": "^0.0.5"
+  },
+  "peerDependenciesMeta": {
+    "nostr-signer-capacitor-plugin": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -42,6 +51,7 @@
     "react-dom": "^18.2.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
+    "vite-plugin-css-injected-by-js": "^3.5.1",
     "vite-plugin-dts": "^3.9.1"
   }
 }

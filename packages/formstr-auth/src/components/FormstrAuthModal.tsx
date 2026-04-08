@@ -1,6 +1,5 @@
 import React, { useEffect, useState, type ReactNode } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import "./FormstrAuth.css";
 import { 
   VpnKeyIcon, 
   HubIcon, 

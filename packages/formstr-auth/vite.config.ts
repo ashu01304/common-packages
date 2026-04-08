@@ -1,11 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
+import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 import path from "path";
 
 export default defineConfig({
   plugins: [
     react(),
+    cssInjectedByJsPlugin(),
     dts({
       insertTypesEntry: true,
     }),
@@ -21,13 +23,17 @@ export default defineConfig({
       external: [
         "react",
         "react-dom",
-        "nostr-tools"
+        "react/jsx-runtime",
+        "nostr-tools",
+        "nostr-signer-capacitor-plugin"
       ],
       output: {
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
-          "nostr-tools": "NostrTools"
+          "react/jsx-runtime": "jsxRuntime",
+          "nostr-tools": "NostrTools",
+          "nostr-signer-capacitor-plugin": "NostrSignerCapacitorPlugin"
         },
       },
     },
