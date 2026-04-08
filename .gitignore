@@ -34,3 +34,4 @@ android/
 ios/
 capacitor.config.ts
 example/dist/
+**/example/package-lock.json
