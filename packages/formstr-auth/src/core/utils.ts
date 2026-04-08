@@ -1,5 +1,5 @@
 import { generateSecretKey } from "nostr-tools";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
+import { bytesToHex, hexToBytes } from "nostr-tools/utils";
 import { IUser } from "./types";
 
 const PREFIX = "formstr-auth";

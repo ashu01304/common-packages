@@ -35,3 +35,4 @@ ios/
 capacitor.config.ts
 example/dist/
 **/example/package-lock.json
+packages/formstr-auth/package-lock.json

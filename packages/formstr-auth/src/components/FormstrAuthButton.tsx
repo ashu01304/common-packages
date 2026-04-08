@@ -1,47 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { 
-  Button, 
-  Avatar, 
-  Box, 
-  Menu, 
-  MenuItem, 
-  ListItemIcon, 
-  ListItemText,
-} from "@mui/material";
-import { 
-  LogoutOutlined as LogoutIcon,
-} from "@mui/icons-material";
+import React, { useState, useEffect, useRef } from "react";
+import "./FormstrAuth.css";
+import { LogoutIcon } from "./Icons";
 import { signerManager } from "../core/SignerManager";
 import { FormstrAuthModal } from "./FormstrAuthModal";
 import { IUser } from "../core/types";
 
 export interface FormstrAuthButtonProps {
-  /**
-   * Label for the login state.
-   */
   label?: string;
-  /**
-   * Custom title for the modal.
-   */
   title?: string;
-  /**
-   * Custom description for the modal.
-   */
   description?: string;
-  /**
-   * Logo URL for the modal.
-   */
   logoUrl?: string;
-  /**
-   * Custom relays for NIP-46 login.
-   */
   customRelays?: string[];
 }
 
-/**
- * A ultra-minimal authentication button that shows the profile avatar 
- * on the right and only includes a Logout option in the dropdown.
- */
 export const FormstrAuthButton: React.FC<FormstrAuthButtonProps> = ({
   label = "Sign In",
   title,
@@ -51,66 +22,66 @@ export const FormstrAuthButton: React.FC<FormstrAuthButtonProps> = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [user, setUser] = useState<IUser | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     signerManager.init();
     setUser(signerManager.getUser());
-    return signerManager.onUserChange(() => setUser(signerManager.getUser()));
+    const cleanup = signerManager.onUserChange(() => setUser(signerManager.getUser()));
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      cleanup();
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
-  const handleClose = () => setAnchorEl(null);
   const handleLogout = async () => {
     await signerManager.logout();
-    handleClose();
+    setMenuOpen(false);
   };
 
   return (
-    <>
+    <div className="fs-menu-wrapper" ref={menuRef}>
       {user ? (
-        <Box>
-          <Button
-            onClick={handleClick}
-            endIcon={<Avatar src={user.picture} alt={user.name} sx={{ width: 26, height: 26 }} />}
-            sx={{ 
-              textTransform: "none", 
-              borderRadius: 1, 
-              fontWeight: 500,
-              color: "text.primary",
-              border: "1px solid rgba(0,0,0,0.15)",
-              px: 1.5,
-              fontSize: "13px"
-            }}
+        <>
+          <button 
+            className="fs-auth-btn" 
+            onClick={() => setMenuOpen(!menuOpen)}
           >
-            {user.name}
-          </Button>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-            <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
-              <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
-              <ListItemText sx={{ ".MuiTypography-root": { fontSize: "13px" } }}>Logout</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
+            <span style={{ marginRight: "4px" }}>{user.name}</span>
+            {user.picture && (
+              <img src={user.picture} alt={user.name} className="fs-avatar" />
+            )}
+          </button>
+          
+          {menuOpen && (
+            <div className="fs-menu">
+              <button 
+                className="fs-menu-item fs-menu-item-error" 
+                onClick={handleLogout}
+              >
+                <LogoutIcon style={{ width: 16 }} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </>
       ) : (
-        <Button 
-          variant="outlined" 
+        <button 
+          className="fs-button-primary" 
+          style={{ background: "transparent", color: "black", border: "1px solid black", borderRadius: "4px" }}
           onClick={() => setModalOpen(true)}
-          sx={{ 
-            textTransform: "none", 
-            borderRadius: 1, 
-            fontWeight: 500, 
-            color: "black", 
-            borderColor: "black",
-            fontSize: "13px",
-            "&:hover": {
-              borderColor: "#333",
-              background: "rgba(0,0,0,0.02)"
-            }
-          }}
         >
           {label}
-        </Button>
+        </button>
       )}
 
       <FormstrAuthModal
@@ -122,6 +93,6 @@ export const FormstrAuthButton: React.FC<FormstrAuthButtonProps> = ({
         logoUrl={logoUrl}
         customRelays={customRelays}
       />
-    </>
+    </div>
   );
 };

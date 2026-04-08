@@ -21,20 +21,13 @@ export default defineConfig({
       external: [
         "react",
         "react-dom",
-        "@mui/material",
-        "@emotion/react",
-        "@emotion/styled",
-        "nostr-tools",
-        "@noble/hashes"
+        "nostr-tools"
       ],
       output: {
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
-          "@mui/material": "MaterialUI",
-          "@emotion/react": "EmotionReact",
-          "@emotion/styled": "EmotionStyled",
-          "nostr-tools": "NostrTools",
+          "nostr-tools": "NostrTools"
         },
       },
     },

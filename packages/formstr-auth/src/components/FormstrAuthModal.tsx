@@ -1,27 +1,14 @@
 import React, { useEffect, useState, type ReactNode } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import {
-  Button,
-  Dialog,
-  Tabs,
-  Tab,
-  Stack,
-  TextField,
-  Typography,
-  Alert,
-  IconButton,
-  Box,
-  ButtonBase,
-  Divider,
-  CircularProgress,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
-import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
-import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
-import PhonelinkLockOutlinedIcon from "@mui/icons-material/PhonelinkLockOutlined";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import "./FormstrAuth.css";
+import { 
+  VpnKeyIcon, 
+  HubIcon, 
+  PersonIcon, 
+  PhonelinkLockIcon, 
+  ChevronRightIcon, 
+  ContentCopyIcon 
+} from "./Icons";
 
 import { signerManager } from "../core/SignerManager";
 import { getAppSecretKeyFromLocalStorage } from "../core/utils";
@@ -41,60 +28,26 @@ const OptionButton: React.FC<{
   showChevron?: boolean;
   chevronRotated?: boolean;
 }> = ({ icon, title, description, onClick, showChevron, chevronRotated }) => {
-  const theme = useTheme();
-  const accent = theme.palette.primary.main;
-  const alpha = theme.palette.mode === "dark" ? "22" : "18";
-
   return (
-    <ButtonBase
-      onClick={onClick}
-      sx={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        px: 2.5,
-        py: 1.75,
-        textAlign: "left",
-        transition: "background 0.15s",
-        "&:hover": { bgcolor: `${accent}${alpha}` },
-      }}
-    >
-      <Box
-        sx={{
-          width: 40,
-          height: 40,
-          borderRadius: 2,
-          bgcolor: `${accent}${alpha}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: accent,
-          flexShrink: 0,
-        }}
-      >
+    <button className="fs-option-button" onClick={onClick}>
+      <div className="fs-option-icon-box">
         {icon}
-      </Box>
-      <Box flex={1} minWidth={0}>
-        <Typography variant="body1" fontWeight={600} lineHeight={1.3}>
-          {title}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {description}
-        </Typography>
-      </Box>
+      </div>
+      <div className="fs-option-text">
+        <span className="fs-option-title">{title}</span>
+        <span className="fs-option-desc">{description}</span>
+      </div>
       {showChevron && (
-        <ChevronRightIcon
-          sx={{
-            color: "text.secondary",
-            opacity: 0.5,
-            flexShrink: 0,
-            transition: "transform 0.2s",
+        <ChevronRightIcon 
+          className="fs-chevron" 
+          style={{ 
+            opacity: 0.5, 
             transform: chevronRotated ? "rotate(90deg)" : "none",
-          }}
+            transition: "transform 0.2s" 
+          }} 
         />
       )}
-    </ButtonBase>
+    </button>
   );
 };
 
@@ -106,7 +59,6 @@ const Nip46Section: React.FC<{ onSuccess: () => void; onError: (msg: string) => 
   const [activeTab, setActiveTab] = useState("manual");
   const [bunkerUri, setBunkerUri] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [copied, setCopied] = useState(false);
 
   const [qrPayload] = useState(() => {
@@ -125,7 +77,7 @@ const Nip46Section: React.FC<{ onSuccess: () => void; onError: (msg: string) => 
   const connect = async (uri: string) => {
     const cleanUri = uri.trim();
     if (!cleanUri) return;
-    onError(""); // Clear previous errors
+    onError("");
     setLoading(true);
     try {
       await signerManager.loginWithNip46(cleanUri);
@@ -144,54 +96,58 @@ const Nip46Section: React.FC<{ onSuccess: () => void; onError: (msg: string) => 
   };
 
   return (
-    <Box sx={{ px: 2, pb: 2, bgcolor: "action.hover" }}>
-      <Tabs
-        value={activeTab}
-        onChange={(_e, val) => {
-          setActiveTab(val);
-          onError(""); // Clear error when switching tabs
-          if (val === "qr") connect(qrPayload);
-        }}
-        sx={{ mb: 1 }}
-      >
-        <Tab label="Paste URI" value="manual" sx={{ textTransform: "none" }} />
-        <Tab label="QR Code" value="qr" sx={{ textTransform: "none" }} />
-      </Tabs>
+    <div className="fs-section-container">
+      <div className="fs-tabs">
+        <button 
+          className={`fs-tab ${activeTab === "manual" ? "active" : ""}`}
+          onClick={() => { setActiveTab("manual"); onError(""); }}
+        >
+          Paste URI
+        </button>
+        <button 
+          className={`fs-tab ${activeTab === "qr" ? "active" : ""}`}
+          onClick={() => { setActiveTab("qr"); onError(""); connect(qrPayload); }}
+        >
+          QR Code
+        </button>
+      </div>
 
       {activeTab === "manual" && (
-        <Stack spacing={1} direction="row">
-          <TextField
-            size="small"
-            fullWidth
+        <div className="fs-input-row">
+          <input
+            className="fs-input"
             placeholder="bunker://... or name@domain.com"
             value={bunkerUri}
             onChange={(e) => setBunkerUri(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && connect(bunkerUri)}
           />
-          <Button
-            variant="contained"
+          <button
+            className="fs-button-primary"
             onClick={() => connect(bunkerUri)}
             disabled={loading || !bunkerUri.trim()}
           >
-            {loading ? <CircularProgress size={20} /> : "Connect"}
-          </Button>
-        </Stack>
+            {loading ? <div className="fs-spinner" /> : "Connect"}
+          </button>
+        </div>
       )}
 
       {activeTab === "qr" && (
-        <Box textAlign="center" py={1}>
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
           <QRCodeCanvas value={qrPayload} size={160} />
-          <Box display="flex" justifyContent="center" alignItems="center" mt={1}>
-            <IconButton size="small" onClick={handleCopy}>
-              <ContentCopyIcon fontSize="small" color={copied ? "success" : "inherit"} />
-            </IconButton>
-            <Typography variant="caption" color={copied ? "success.main" : "text.secondary"}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: "8px", gap: "4px" }}>
+            <button 
+              onClick={handleCopy} 
+              style={{ background: "transparent", border: "none", cursor: "pointer", display: "flex" }}
+            >
+              <ContentCopyIcon style={{ color: copied ? "var(--fs-success)" : "inherit", width: 18 }} />
+            </button>
+            <span style={{ fontSize: "12px", color: copied ? "var(--fs-success)" : "var(--fs-text-secondary)" }}>
               {copied ? "Copied!" : "Copy Connection URI"}
-            </Typography>
-          </Box>
-        </Box>
+            </span>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 
@@ -205,7 +161,7 @@ const NsecSection: React.FC<{ onSuccess: () => void; onError: (msg: string) => v
   const handleLogin = async () => {
     const cleanNsec = nsec.trim();
     if (!cleanNsec) return;
-    onError(""); // Clear previous errors
+    onError("");
     setLoading(true);
     try {
       await signerManager.loginWithPrivkey(cleanNsec);
@@ -218,27 +174,25 @@ const NsecSection: React.FC<{ onSuccess: () => void; onError: (msg: string) => v
   };
 
   return (
-    <Box sx={{ px: 2, pb: 2, pt: 1, bgcolor: "action.hover" }}>
-      <Stack spacing={1} direction="row">
-        <TextField
-          size="small"
-          fullWidth
+    <div className="fs-section-container">
+      <div className="fs-input-row">
+        <input
+          className="fs-input"
           type="password"
           placeholder="nsec1..."
           value={nsec}
           onChange={(e) => setNsec(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleLogin()}
         />
-        <Button
-          variant="contained"
+        <button
+          className="fs-button-primary"
           onClick={handleLogin}
           disabled={loading || !nsec.trim()}
-          sx={{ textTransform: "none" }}
         >
-          {loading ? <CircularProgress size={20} /> : "Login"}
-        </Button>
-      </Stack>
-    </Box>
+          {loading ? <div className="fs-spinner" /> : "Login"}
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -265,7 +219,6 @@ export const FormstrAuthModal: React.FC<FormstrAuthModalProps> = ({
   logoUrl = FORMSTR_LOGO,
   customRelays = Nip46Relays,
 }) => {
-  const theme = useTheme();
   const [showNip46, setShowNip46] = useState(false);
   const [showNsec, setShowNsec] = useState(false);
   const [error, setError] = useState("");
@@ -326,101 +279,99 @@ export const FormstrAuthModal: React.FC<FormstrAuthModalProps> = ({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3, overflow: "hidden" } }}
-    >
-      {/* Header */}
-      <Box sx={{ px: 3, pt: 4, pb: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
-        {logoUrl && <img src={logoUrl} alt="Logo" style={{ width: 84, height: 84, borderRadius: 16, objectFit: "contain" }} />}
-        <Box textAlign="center">
-          <Typography variant="h6" fontWeight={700}>{title}</Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>{description}</Typography>
-        </Box>
-        {error && <Alert severity="error" sx={{ width: "100%", borderRadius: 2 }}>{error}</Alert>}
-      </Box>
+    <div className="fs-modal-overlay" onClick={onClose}>
+      <div className="fs-modal-content" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="fs-modal-header">
+          {logoUrl && <img src={logoUrl} alt="Logo" className="fs-logo" />}
+          <div>
+            <h2 className="fs-title">{title}</h2>
+            <p className="fs-description">{description}</p>
+          </div>
+          {error && <div className="fs-alert">{error}</div>}
+        </div>
 
-      {/* Options */}
-      <Stack divider={<Divider />}>
-        {!isNative && (
-          <OptionButton
-            icon={<VpnKeyOutlinedIcon />}
-            title="Browser Extension"
-            description="Sign with Alby, nos2x, or Flamingo"
-            onClick={handleNip07}
-          />
-        )}
-
-        {isAndroidNative() && (
-          <>
-            {installedSigners.map((app) => (
-              <OptionButton
-                key={app.packageName}
-                icon={app.iconUrl ? <img src={app.iconUrl} alt={app.name} style={{ width: 24, height: 24, borderRadius: 4 }} /> : <PhonelinkLockOutlinedIcon />}
-                title={app.name}
-                description="Sign with external Android app"
-                onClick={() => handleNip55(app.packageName)}
-              />
-            ))}
-            {installedSigners.length === 0 && (
-              <OptionButton
-                icon={<PhonelinkLockOutlinedIcon />}
-                title="External Signer"
-                description="Sign using a NIP-55 compatible app"
-                onClick={() => handleNip55("com.greenart7c3.nostrsigner")}
-              />
-            )}
-          </>
-        )}
-
-        <Box>
-          <OptionButton
-            icon={<HubOutlinedIcon />}
-            title="Remote Signer"
-            description="Connect via NIP-46 (Bunker)"
-            onClick={() => {
-              setShowNip46(!showNip46);
-              setShowNsec(false);
-            }}
-            showChevron
-            chevronRotated={showNip46}
-          />
-          {showNip46 && <Nip46Section onSuccess={handleSuccess} onError={setError} relays={customRelays} />}
-        </Box>
-
-        {isAndroidNative() && (
-          <Box>
+        {/* Options */}
+        <div className="fs-options-list">
+          {!isNative && (
             <OptionButton
-              icon={<VpnKeyOutlinedIcon />}
-              title="Private Key"
-              description="Sign-in with your nsec key"
+              icon={<VpnKeyIcon />}
+              title="Browser Extension"
+              description="Sign with Alby, nos2x, or Flamingo"
+              onClick={handleNip07}
+            />
+          )}
+
+          {isAndroidNative() && (
+            <>
+              {installedSigners.map((app) => (
+                <OptionButton
+                  key={app.packageName}
+                  icon={app.iconUrl ? <img src={app.iconUrl} alt={app.name} style={{ width: 24, height: 24, borderRadius: 4 }} /> : <PhonelinkLockIcon />}
+                  title={app.name}
+                  description="Sign with external Android app"
+                  onClick={() => handleNip55(app.packageName)}
+                />
+              ))}
+              {installedSigners.length === 0 && (
+                <OptionButton
+                  icon={<PhonelinkLockIcon />}
+                  title="External Signer"
+                  description="Sign using a NIP-55 compatible app"
+                  onClick={() => handleNip55("com.greenart7c3.nostrsigner")}
+                />
+              )}
+            </>
+          )}
+
+          <div>
+            <OptionButton
+              icon={<HubIcon />}
+              title="Remote Signer"
+              description="Connect via NIP-46 (Bunker)"
               onClick={() => {
-                setShowNsec(!showNsec);
-                setShowNip46(false);
+                setShowNip46(!showNip46);
+                setShowNsec(false);
               }}
               showChevron
-              chevronRotated={showNsec}
+              chevronRotated={showNip46}
             />
-            {showNsec && <NsecSection onSuccess={handleSuccess} onError={setError} />}
-          </Box>
-        )}
+            {showNip46 && <Nip46Section onSuccess={handleSuccess} onError={setError} relays={customRelays} />}
+          </div>
 
-        <OptionButton
-          icon={<PersonOutlinedIcon />}
-          title="Temporary Account"
-          description="Instant access, persists in this browser"
-          onClick={handleGuest}
-        />
-      </Stack>
+          {isAndroidNative() && (
+            <div>
+              <OptionButton
+                icon={<VpnKeyIcon />}
+                title="Private Key"
+                description="Sign-in with your nsec key"
+                onClick={() => {
+                  setShowNsec(!showNsec);
+                  setShowNip46(false);
+                }}
+                showChevron
+                chevronRotated={showNsec}
+              />
+              {showNsec && <NsecSection onSuccess={handleSuccess} onError={setError} />}
+            </div>
+          )}
 
-      {/* Footer */}
-      <Box sx={{ px: 3, py: 1.5, borderTop: `1px solid ${theme.palette.divider}`, textAlign: "center" }}>
-        <Typography variant="caption" color="text.secondary">Your private keys never leave your device.</Typography>
-      </Box>
-    </Dialog>
+          <OptionButton
+            icon={<PersonIcon />}
+            title="Temporary Account"
+            description="Instant access, persists in this browser"
+            onClick={handleGuest}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="fs-footer">
+          Your private keys never leave your device.
+        </div>
+      </div>
+    </div>
   );
 };

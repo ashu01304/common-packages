@@ -1,5 +1,5 @@
 import { getPublicKey, finalizeEvent, nip04, nip44 } from "nostr-tools";
-import { hexToBytes } from "@noble/hashes/utils";
+import { bytesToHex, hexToBytes } from "nostr-tools/utils";
 import { NostrSigner } from "./types";
 
 export function createLocalSigner(privkey: string): NostrSigner {
