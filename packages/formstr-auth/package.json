@@ -1,6 +1,6 @@
 {
   "name": "formstr-auth",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Cross-platform Nostr authentication library with NIP-55 support and NIP-46 Remote Signer.",
   "author": "ashu01304",
   "license": "MIT",
