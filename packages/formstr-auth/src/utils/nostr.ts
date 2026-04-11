@@ -28,3 +28,20 @@ export async function fetchUserProfile(
     pool.close(relays);
   }
 }
+
+/**
+ * Publishes a signed event to the network.
+ */
+export async function publishEvent(
+  event: NostrEvent,
+  relays: string[] = DEFAULT_RELAYS
+): Promise<void> {
+  const pool = new SimplePool();
+  try {
+    await Promise.any(pool.publish(relays, event));
+  } catch (error) {
+    console.error("Failed to publish event:", error);
+  } finally {
+    pool.close(relays);
+  }
+}

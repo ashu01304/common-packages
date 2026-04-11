@@ -1,4 +1,5 @@
-import { nip19 } from "nostr-tools";
+import { nip19, generateSecretKey } from "nostr-tools";
+import * as nip49 from "nostr-tools/nip49";
 import { bytesToHex } from "nostr-tools/utils";
 
 import { nip07Signer } from "./NIP07Signer";
@@ -15,11 +16,15 @@ import {
   getUserDataFromLocalStorage,
   setUserDataInLocalStorage,
   clearAuthStorage,
+  getNcryptsecFromLocalStorage,
+  setNcryptsecInLocalStorage,
+  getSessionSecret,
+  setSessionSecret,
 } from "./utils";
-import { fetchUserProfile } from "../utils/nostr";
+import { fetchUserProfile, publishEvent } from "../utils/nostr";
 import { isNative } from "../utils/platform";
 
-const ANONYMOUS_USER_NAME = "Formstr User";
+const ANONYMOUS_USER_NAME = "";
 const DEFAULT_IMAGE_URL = "";
 
 export class SignerManager {
@@ -53,15 +58,20 @@ export class SignerManager {
     try {
       const bunkerUri = getBunkerUriInLocalStorage();
 
-      // 1. Try NIP-46 (Bunker)
-      if (bunkerUri?.bunkerUri) {
+      // 1. Try Session Cache (Survives reload)
+      const sessionSecret = getSessionSecret();
+      if (sessionSecret && keys?.pubkey) {
+        await this.loginWithLocalKey(keys.pubkey, sessionSecret);
+      }
+      // 2. Try NIP-46 (Bunker)
+      else if (bunkerUri?.bunkerUri) {
         await this.loginWithNip46(bunkerUri.bunkerUri);
       } 
-      // 2. Try NIP-07 (Extension) - only on web
+      // 3. Try NIP-07 (Extension) - only on web
       else if (!isNative && window.nostr && keys?.pubkey && !keys?.secret) {
         await this.loginWithNip07();
       }
-      // 3. Try Local Key (Guest/nsec)
+      // 4. Try Local Key (Guest/nsec - will be device-encrypted if using new utils)
       else if (keys?.pubkey && keys?.secret) {
         await this.loginWithLocalKey(keys.pubkey, keys.secret);
       }
@@ -157,6 +167,67 @@ export class SignerManager {
     setKeysInLocalStorage(pubkey, privkey);
   }
 
+  async loginWithNcryptsec(ncryptsec: string, password: string) {
+    const secretKey = nip49.decrypt(ncryptsec, password);
+    const privkeyHex = bytesToHex(secretKey);
+    
+    this.signer = createLocalSigner(privkeyHex);
+    const pubkey = await this.signer.getPublicKey();
+    
+    await this.saveUser(pubkey);
+    setKeysInLocalStorage(pubkey); // Store pubkey locally
+    setNcryptsecInLocalStorage(ncryptsec); // Store encrypted key
+    setSessionSecret(privkeyHex); // Cache for reload
+    this.notify();
+  }
+
+  async signUpWithPassword(password: string, metadata: Partial<IUser>) {
+    const secretKey = generateSecretKey();
+    const privkeyHex = bytesToHex(secretKey);
+    const ncryptsec = nip49.encrypt(secretKey, password);
+    
+    this.signer = createLocalSigner(privkeyHex);
+    const pubkey = await this.signer.getPublicKey();
+
+    // 1. Set internal state
+    this.user = { pubkey, ...metadata };
+    setUserDataInLocalStorage(this.user);
+    
+    // 2. Persist encrypted storage
+    setKeysInLocalStorage(pubkey);
+    setNcryptsecInLocalStorage(ncryptsec);
+    setSessionSecret(privkeyHex);
+
+    // 3. Publish Kind 0 (Fire and forget)
+    this.publishProfile(pubkey, metadata).catch(console.error);
+    
+    this.notify();
+    return ncryptsec;
+  }
+
+  private async publishProfile(pubkey: string, metadata: Partial<IUser>) {
+    if (!this.signer) return;
+    const content = JSON.stringify({
+      name: metadata.name,
+      display_name: metadata.display_name,
+      about: metadata.about,
+      picture: metadata.picture,
+      nip05: metadata.nip05,
+      lud16: metadata.lud16,
+    });
+    
+    const event = {
+      kind: 0,
+      pubkey,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [],
+      content,
+    };
+    
+    const signedEvent = await this.signer.signEvent(event);
+    await publishEvent(signedEvent);
+  }
+
   async logout() {
     this.signer = null;
     this.user = null;
@@ -170,14 +241,16 @@ export class SignerManager {
       const profile = event ? JSON.parse(event.content) : {};
       
       const hasMetadata = !!profile.name || !!profile.picture;
-      
+      const existing = this.user?.pubkey === pubkey ? this.user : getUserDataFromLocalStorage()?.user;
+
       const userData: IUser = {
         pubkey,
-        name: profile.name || profile.display_name || ANONYMOUS_USER_NAME,
-        picture: profile.picture || DEFAULT_IMAGE_URL,
-        about: profile.about,
-        nip05: profile.nip05,
-        lud16: profile.lud16,
+        name: profile.name || existing?.name || ANONYMOUS_USER_NAME,
+        display_name: profile.display_name || profile.name || existing?.display_name || existing?.name || ANONYMOUS_USER_NAME,
+        picture: profile.picture || existing?.picture || DEFAULT_IMAGE_URL,
+        about: profile.about || existing?.about,
+        nip05: profile.nip05 || existing?.nip05,
+        lud16: profile.lud16 || existing?.lud16,
       };
       
       this.user = userData;
@@ -192,6 +265,13 @@ export class SignerManager {
 
       return userData;
     } catch (e) {
+      const existing = this.user?.pubkey === pubkey ? this.user : getUserDataFromLocalStorage()?.user;
+      if (existing) {
+        this.user = existing;
+        this.notify();
+        return existing;
+      }
+      
       const fallback: IUser = { pubkey, name: ANONYMOUS_USER_NAME, picture: DEFAULT_IMAGE_URL };
       this.user = fallback;
       this.notify();

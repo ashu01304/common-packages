@@ -13,6 +13,7 @@ export interface NostrSigner {
 export interface IUser {
   pubkey: string;
   name?: string;
+  display_name?: string;
   picture?: string;
   about?: string;
   nip05?: string;
